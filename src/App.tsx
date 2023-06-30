@@ -1,13 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
-import words from "./wordlist.json";
+import { useCallback, useEffect, useState } from "react";
 import { HangmanDrawing } from "./components/HangmanDrawing";
 import { HangmanWord } from "./components/HangmanWord";
 import { Keyboard } from "./components/Keyboard";
+import words from "./wordList.json";
+
+function getWord() {
+  return words[Math.floor(Math.random() * words.length)];
+}
 
 function App() {
-  const [wordToGuess, setWordToGuess] = useState(() => {
-    return words[Math.floor(Math.random() * words.length)];
-  });
+  const [wordToGuess, setWordToGuess] = useState(getWord);
   const [guessedLetters, setGuessedLetters] = useState<string[]>([]);
 
   const incorrectLetters = guessedLetters.filter(
@@ -44,6 +46,23 @@ function App() {
     };
   }, [guessedLetters]);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const key = e.key;
+      if (key !== "Enter") return;
+
+      e.preventDefault();
+      setGuessedLetters([]);
+      setWordToGuess(getWord());
+    };
+
+    document.addEventListener("keypress", handler);
+
+    return () => {
+      document.removeEventListener("keypress", handler);
+    };
+  }, []);
+
   return (
     <div
       style={{
@@ -60,15 +79,19 @@ function App() {
         {isLoser && "Nice Try - Refresh to try again"}
       </div>
       <HangmanDrawing numberOfGuesses={incorrectLetters.length} />
-      <HangmanWord wordToGuess={wordToGuess} guessedLetters={guessedLetters} />
+      <HangmanWord
+        reveal={isLoser}
+        guessedLetters={guessedLetters}
+        wordToGuess={wordToGuess}
+      />
       <div style={{ alignSelf: "stretch" }}>
         <Keyboard
           disabled={isWinner || isLoser}
-          inactiveLetters={incorrectLetters}
-          addGuessedLetter={addGuessedLetter}
           activeLetters={guessedLetters.filter((letter) =>
             wordToGuess.includes(letter)
           )}
+          inactiveLetters={incorrectLetters}
+          addGuessedLetter={addGuessedLetter}
         />
       </div>
     </div>
